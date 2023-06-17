@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BLED Project</string>
+    <string name="bluetoothDeviceName">bluetoothDeviceName</string>
+    <string name="bluetoothDeviceAddress">bluetoothDeviceAddress</string>
 </resources>

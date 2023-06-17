@@ -1,35 +1,43 @@
 package com.example.bledproject
 
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.bledproject.bluetooth.BluetoothScreen
 import com.example.bledproject.bluetooth.BluetoothViewModel
 import com.example.bledproject.bluetooth.TestBluetoothScreen
+import com.example.bledproject.data.UserStore
 import com.example.bledproject.ui.theme.BLEDProjectTheme
-import com.juul.kable.Scanner
-import com.juul.kable.logs.Logging
-import com.juul.kable.logs.SystemLogEngine
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
-		val bluetoothViewModel = BluetoothViewModel(application)
+		val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
+		val bluetoothAdapter = bluetoothManager.adapter
+		val bluetoothViewModel = BluetoothViewModel(application, bluetoothManager, bluetoothAdapter)
+
+		// auto connect to bluetooth device on start if it was connected before
+		val userStore = UserStore(applicationContext)
+		CoroutineScope(Dispatchers.IO).launch {
+			if (userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)) != "") {
+				println("Access token bluetooth" + userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
+				// create BluetoothDevice from address
+
+				val bluetoothDevice: BluetoothDevice? = bluetoothAdapter.getRemoteDevice(userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
+				if (bluetoothDevice != null) {
+					bluetoothViewModel.connectToDevice(bluetoothDevice)
+				} else {
+					println("Bluetooth device is null")
+				}
+			} else {
+				println("Access token bluetooth is empty" + userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
+			}
+		}
 
 		setContent {
 			BLEDProjectTheme {

@@ -11,18 +11,40 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
-import com.example.bledproject.MainActivity
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
 
 @Composable
 fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 	Column {
-		Button(modifier = Modifier.fillMaxWidth(), onClick = { bluetoothViewModel.startScan() }) {
-			Text("Start Scan")
+		Row() {
+			Button(
+				modifier = Modifier,
+				onClick = {
+					if (bluetoothViewModel.scanning.value) {
+						bluetoothViewModel.stopScan()
+					} else {
+						bluetoothViewModel.startScan()
+					}
+				}) {
+				if (bluetoothViewModel.scanning.value) {
+					Text("Stop Scan")
+				} else {
+					Text("Start Scan")
+				}
+			}
+			if (bluetoothViewModel.connected.value) {
+				// disconnect button
+				Button(
+					modifier = Modifier.fillMaxWidth(),
+					onClick = {
+						bluetoothViewModel.disconnect()
+					}) {
+					Text("Disconnect")
+				}
+			}
 		}
 
-		LazyColumn (modifier = Modifier.weight(1f)) {
+
+		LazyColumn(modifier = Modifier.weight(1f)) {
 			bluetoothViewModel.devices.forEach() { device ->
 				item {
 					Row() {
@@ -54,7 +76,12 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 		}
 		Row() {
 			Text("Read Characteristic: ")
-			Text(text = bluetoothViewModel.connected.value)
+			Text(text = bluetoothViewModel.connectedDevice.value)
+			Button(onClick = {
+				bluetoothViewModel.writeCharacteristic("TEst send")
+			}) {
+				Text(text = "Write")
+			}
 		}
 	}
 }

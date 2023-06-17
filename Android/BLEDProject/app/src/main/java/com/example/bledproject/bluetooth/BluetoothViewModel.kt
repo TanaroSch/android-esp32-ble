@@ -2,14 +2,11 @@ package com.example.bledproject.bluetooth
 
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.app.Application
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -18,45 +15,40 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Looper
 import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
-import androidx.lifecycle.AndroidViewModel
-import com.example.bledproject.MainActivity
-import hilt_aggregated_deps._dagger_hilt_android_internal_modules_ApplicationContextModule
-import kotlinx.coroutines.currentCoroutineContext
 import java.util.UUID
 
 
-class BluetoothViewModel(myContext: Context) {
+class BluetoothViewModel(
+	myContext: Context,
+	bluetoothManager: BluetoothManager,
+	bluetoothAdapter: BluetoothAdapter
+) {
 	val devices = mutableStateListOf<BluetoothDevice>()
+
 	val scanning = mutableStateOf(false)
-	var connected = mutableStateOf("")
 	val context = myContext
-	val bluetoothManager =
-			myContext.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-	val bluetoothAdapter = bluetoothManager.adapter
-	val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
-	val scanCallback = object : ScanCallback() {
+
+	var connectedDevice = mutableStateOf("")
+
+	// state of connection
+	var connected = mutableStateOf(false)
+
+	var thisGatt: BluetoothGatt? = null
+	var writeCharacteristic: BluetoothGattCharacteristic? = null
+
+	private val bluetoothLeScanner = bluetoothAdapter.bluetoothLeScanner
+	private val scanCallback = object : ScanCallback() {
 		override fun onScanResult(
 			callbackType: Int,
 			result: ScanResult
 		) {
 			val device = result.device
-			//only add if not already in list
-			if (!devices.contains(device))
-				devices.add(device)
+			// only add if not already in list
+			if (!devices.contains(device)) devices.add(device)
 		}
 	}
 	val gattObject = object : BluetoothGattCallback() {
@@ -65,9 +57,17 @@ class BluetoothViewModel(myContext: Context) {
 			status: Int,
 			newState: Int
 		) {
-			super.onConnectionStateChange(gatt, status, newState)
+			super.onConnectionStateChange(
+				gatt,
+				status,
+				newState
+			)
 			if (newState == BluetoothProfile.STATE_CONNECTED) {
-				Log.d("GattCallback", "Successfully connected to device")
+				Log.d(
+					"GattCallback",
+					"Successfully connected to device"
+				)
+				connected.value = true
 				if (ActivityCompat.checkSelfPermission(
 						context,
 						Manifest.permission.BLUETOOTH_CONNECT
@@ -84,7 +84,11 @@ class BluetoothViewModel(myContext: Context) {
 				}
 				gatt.discoverServices()
 			} else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-				Log.d("GattCallback", "Successfully disconnected from device")
+				Log.d(
+					"GattCallback",
+					"Successfully disconnected from device"
+				)
+				connected.value = false
 			}
 		}
 
@@ -97,18 +101,62 @@ class BluetoothViewModel(myContext: Context) {
 				status
 			)
 			if (status == BluetoothGatt.GATT_SUCCESS) {
-				Log.d("GattCallback", "Discovered Services")
+				Log.d(
+					"GattCallback",
+					"Discovered Services"
+				)
+				thisGatt = gatt
 				gatt?.services?.forEach { service ->
-					Log.d("GattCallback", "Service: ${service.uuid}")
+					Log.d(
+						"GattCallback",
+						"Service: ${service.uuid}"
+					)
 					service.characteristics.forEach { characteristic ->
-						Log.d("GattCallback", "Characteristic: ${characteristic.uuid}")
+						Log.d(
+							"GattCallback",
+							"Characteristic: ${characteristic.uuid}"
+						)
+						if (characteristic.uuid == UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")) {
+							// Listen for changes on this characteristic
+							if (ActivityCompat.checkSelfPermission(
+									context,
+									Manifest.permission.BLUETOOTH_CONNECT
+								) != PackageManager.PERMISSION_GRANTED
+							) {
+								// TODO: Consider calling
+								//    ActivityCompat#requestPermissions
+								// here to request the missing permissions, and then overriding
+								//   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+								//                                          int[] grantResults)
+								// to handle the case where the user grants the permission. See the documentation
+								// for ActivityCompat#requestPermissions for more details.
+								return
+							}
+							gatt.setCharacteristicNotification(
+								characteristic,
+								true
+							)
+						}
+						if (characteristic.uuid == UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")) {
+							Log.d(
+								"GattCallback",
+								"Found write characteristic"
+							)
+							writeCharacteristic = characteristic
+						}
 						characteristic.descriptors.forEach { descriptor ->
-							Log.d("GattCallback", "Descriptor: ${descriptor.uuid}")
+							Log.d(
+								"GattCallback",
+								"Descriptor: ${descriptor.uuid}"
+							)
 						}
 					}
 				}
 			} else {
-				Log.d("GattCallback", "Failed to discover services")
+				Log.d(
+					"GattCallback",
+					"Failed to discover services"
+				)
 			}
 		}
 
@@ -122,10 +170,18 @@ class BluetoothViewModel(myContext: Context) {
 				characteristic,
 				value
 			)
-			Log.d("GattCallback", "Characteristic changed")
-			//TODO: change UUID
-			if (characteristic.uuid == UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb")) {
-				Log.d("GattCallback", "Heart Rate Measurement: ${value[1]}")
+			Log.d(
+				"GattCallback",
+				"Characteristic changed"
+			)
+			if (characteristic.uuid == UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")) {
+				// Characteristic changed
+				val readValue = String(characteristic.value)
+				Log.d(
+					"BluetoothScreen",
+					"Value: $readValue"
+				)
+				// TODO handle received data
 			}
 		}
 	}
@@ -159,6 +215,26 @@ class BluetoothViewModel(myContext: Context) {
 			scanCallback
 		)
 
+	}
+
+	fun writeCharacteristic(message: String) {
+		val characteristic = writeCharacteristic ?: return
+		characteristic.setValue(message.toByteArray(Charsets.UTF_8))
+		if (ActivityCompat.checkSelfPermission(
+				context,
+				Manifest.permission.BLUETOOTH_CONNECT
+			) != PackageManager.PERMISSION_GRANTED
+		) {
+			// TODO: Consider calling
+			//    ActivityCompat#requestPermissions
+			// here to request the missing permissions, and then overriding
+			//   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+			//                                          int[] grantResults)
+			// to handle the case where the user grants the permission. See the documentation
+			// for ActivityCompat#requestPermissions for more details.
+			return
+		}
+		thisGatt?.writeCharacteristic(characteristic)
 	}
 
 	fun stopScan() {
@@ -202,7 +278,26 @@ class BluetoothViewModel(myContext: Context) {
 			false,
 			gattObject
 		)
-		connected.value = device.address
+		connectedDevice.value = device.address
+	}
+
+	fun disconnect() {
+		// disconnect from device
+		if (ActivityCompat.checkSelfPermission(
+				context,
+				Manifest.permission.BLUETOOTH_CONNECT
+			) != PackageManager.PERMISSION_GRANTED
+		) {
+			// TODO: Consider calling
+			//    ActivityCompat#requestPermissions
+			// here to request the missing permissions, and then overriding
+			//   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+			//                                          int[] grantResults)
+			// to handle the case where the user grants the permission. See the documentation
+			// for ActivityCompat#requestPermissions for more details.
+			return
+		}
+		thisGatt?.disconnect()
 	}
 
 

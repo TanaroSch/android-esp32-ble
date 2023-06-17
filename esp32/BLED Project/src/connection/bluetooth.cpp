@@ -86,9 +86,11 @@ void loopBluetooth()
     if (deviceConnected)
     {
         // case: device connected
-        /*
-        pTxCharacteristic->setValue(&txValue, 1);
-        pTxCharacteristic->notify(); */
+        std::string value = std::to_string(txValue);
+        Serial.println(value.c_str());
+        pTxCharacteristic->setValue(value.c_str());
+        pTxCharacteristic->notify(); 
+        txValue++;
         delay(10); // bluetooth stack will go into congestion, if too many packets are sent
     }
     // disconnecting
