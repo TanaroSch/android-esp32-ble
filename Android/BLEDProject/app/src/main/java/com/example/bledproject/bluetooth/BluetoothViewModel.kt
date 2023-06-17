@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
-import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
@@ -30,15 +29,13 @@ import java.util.UUID
 
 class BluetoothViewModel(
 	myContext: Context,
-	bluetoothManager: BluetoothManager,
 	bluetoothAdapter: BluetoothAdapter,
-	userStore: UserStore
+	val userStore: UserStore
 ) {
 	val devices = mutableStateListOf<BluetoothDevice>()
 
 	val scanning = mutableStateOf(false)
 	val context = myContext
-	val userStore = userStore
 
 	private val manuallyDisconnected = mutableStateOf(false)
 
@@ -102,6 +99,10 @@ class BluetoothViewModel(
 				)
 				connected.value = false
 				connectedDevice.value = ""
+				if (!manuallyDisconnected.value) {
+					// automatically reconnect
+					connectToDevice(gatt.device)
+				}
 			}
 		}
 
@@ -155,16 +156,16 @@ class BluetoothViewModel(
 							)
 							// this is essential to be able to read the characteristic
 							val descriptor = characteristic.getDescriptor(
+								// DO NOT DELETE
 								UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 							)
+							// DO NOT DELETE
 							descriptor.setValue(
+								// DO NOT DELETE
 								BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
 							)
+							// DO NOT DELETE
 							gatt.writeDescriptor(descriptor)
-							Log.d(
-								"GattCallback",
-								"Set notification to true"
-							)
 						}
 						if (characteristic.uuid == UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")) {
 							Log.d(

@@ -110,7 +110,7 @@ fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 				Text("Read Characteristic: ")
 				Text(text = bluetoothViewModel.receivedData.value)
 				Button(onClick = {
-					bluetoothViewModel.writeCharacteristic("TEst send")
+					bluetoothViewModel.writeCharacteristic("Test send")
 				}) {
 					Text(text = "Write")
 				}
