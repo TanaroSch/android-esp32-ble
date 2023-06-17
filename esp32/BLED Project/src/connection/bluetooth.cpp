@@ -39,9 +39,7 @@ class MyCallbacks : public BLECharacteristicCallbacks
         strcpy(myArray, rxValue.c_str());
         if (rxValue.length() > 0)
         {
-            // TODO: do something with the data received
-            // TODO: call messageHandler
-            Serial.println(rxValue.c_str());
+            messageHandler(rxValue.c_str());
         }
     }
 };
@@ -115,4 +113,10 @@ void sendMessage(String message)
 {
     pTxCharacteristic->setValue(message.c_str());
     pTxCharacteristic->notify();
+}
+
+void messageHandler(String message)
+{
+    // ADD YOUR CODE HERE
+    Serial.println(message);
 }

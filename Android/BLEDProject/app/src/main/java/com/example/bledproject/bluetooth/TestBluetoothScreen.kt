@@ -17,6 +17,7 @@ import androidx.core.app.ActivityCompat
 @Composable
 fun TestBluetoothScreen(bluetoothViewModel: BluetoothViewModel) {
 
+	// show toast when connected
 	LaunchedEffect(
 		key1 = bluetoothViewModel.connected.value,
 		block = {

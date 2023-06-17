@@ -25,14 +25,17 @@ class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 
+		// userStore for storing device address
 		val userStore = UserStore(applicationContext)
 
+		// setup bluetooth view model
 		val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
 		val bluetoothAdapter = bluetoothManager.adapter
 		val bluetoothViewModel = BluetoothViewModel(
 			application,
 			bluetoothAdapter,
-			userStore
+			userStore,
+			::messageHandler
 		)
 
 		// auto connect to bluetooth device on start if it was connected before
@@ -52,7 +55,6 @@ class MainActivity : ComponentActivity() {
 				println("Access token bluetooth is empty" + userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
 			}
 		}
-
 
 
 		setContent {
@@ -88,6 +90,12 @@ class MainActivity : ComponentActivity() {
 			}
 		}
 	}
+
+	private fun messageHandler(message: String) {
+		// ADD MESSAGE HANDLER HERE
+		println("Message handler: " + message)
+	}
+
 	@Deprecated("Deprecated in Java")
 	override fun onRequestPermissionsResult(
 		requestCode: Int,

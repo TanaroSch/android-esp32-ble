@@ -30,7 +30,8 @@ import java.util.UUID
 class BluetoothViewModel(
 	myContext: Context,
 	bluetoothAdapter: BluetoothAdapter,
-	val userStore: UserStore
+	val userStore: UserStore,
+	val messageHandler: (String) -> Unit
 ) {
 	val devices = mutableStateListOf<BluetoothDevice>()
 
@@ -42,6 +43,8 @@ class BluetoothViewModel(
 	// state of connection
 	var connected = mutableStateOf(false)
 	var connectedDevice = mutableStateOf("")
+
+	// TODO: remove receivedData and use messageHandler instead
 	var receivedData = mutableStateOf("")
 
 	var thisGatt: BluetoothGatt? = null
@@ -212,7 +215,7 @@ class BluetoothViewModel(
 					"Value: $readValue"
 				)
 				receivedData.value = readValue
-				// TODO handle received data
+				messageHandler(readValue)
 			}
 		}
 	}
