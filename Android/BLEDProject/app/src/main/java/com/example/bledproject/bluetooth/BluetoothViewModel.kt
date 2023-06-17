@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -152,6 +153,14 @@ class BluetoothViewModel(
 								characteristic,
 								true
 							)
+							// this is essential to be able to read the characteristic
+							val descriptor = characteristic.getDescriptor(
+								UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+							)
+							descriptor.setValue(
+								BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+							)
+							gatt.writeDescriptor(descriptor)
 							Log.d(
 								"GattCallback",
 								"Set notification to true"
