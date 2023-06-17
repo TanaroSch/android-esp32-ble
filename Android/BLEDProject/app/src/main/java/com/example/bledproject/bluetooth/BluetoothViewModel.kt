@@ -19,23 +19,32 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.ActivityCompat
+import com.example.bledproject.R
+import com.example.bledproject.data.UserStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 
 class BluetoothViewModel(
 	myContext: Context,
 	bluetoothManager: BluetoothManager,
-	bluetoothAdapter: BluetoothAdapter
+	bluetoothAdapter: BluetoothAdapter,
+	userStore: UserStore
 ) {
 	val devices = mutableStateListOf<BluetoothDevice>()
 
 	val scanning = mutableStateOf(false)
 	val context = myContext
+	val userStore = userStore
 
-	var connectedDevice = mutableStateOf("")
+	private val manuallyDisconnected = mutableStateOf(false)
 
 	// state of connection
 	var connected = mutableStateOf(false)
+	var connectedDevice = mutableStateOf("")
+	var receivedData = mutableStateOf("")
 
 	var thisGatt: BluetoothGatt? = null
 	var writeCharacteristic: BluetoothGattCharacteristic? = null
@@ -68,6 +77,8 @@ class BluetoothViewModel(
 					"Successfully connected to device"
 				)
 				connected.value = true
+				manuallyDisconnected.value = false
+				saveDevice(gatt.device)
 				if (ActivityCompat.checkSelfPermission(
 						context,
 						Manifest.permission.BLUETOOTH_CONNECT
@@ -89,6 +100,7 @@ class BluetoothViewModel(
 					"Successfully disconnected from device"
 				)
 				connected.value = false
+				connectedDevice.value = ""
 			}
 		}
 
@@ -117,6 +129,10 @@ class BluetoothViewModel(
 							"Characteristic: ${characteristic.uuid}"
 						)
 						if (characteristic.uuid == UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")) {
+							Log.d(
+								"GattCallback",
+								"Found read characteristic"
+							)
 							// Listen for changes on this characteristic
 							if (ActivityCompat.checkSelfPermission(
 									context,
@@ -135,6 +151,10 @@ class BluetoothViewModel(
 							gatt.setCharacteristicNotification(
 								characteristic,
 								true
+							)
+							Log.d(
+								"GattCallback",
+								"Set notification to true"
 							)
 						}
 						if (characteristic.uuid == UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")) {
@@ -181,6 +201,7 @@ class BluetoothViewModel(
 					"BluetoothScreen",
 					"Value: $readValue"
 				)
+				receivedData.value = readValue
 				// TODO handle received data
 			}
 		}
@@ -298,6 +319,23 @@ class BluetoothViewModel(
 			return
 		}
 		thisGatt?.disconnect()
+		manuallyDisconnected.value = true
+	}
+
+	fun saveDevice(device: BluetoothDevice) {
+		// save device address
+		CoroutineScope(Dispatchers.IO).launch {
+			device.address?.let {
+				userStore.saveToken(
+					context.getString(R.string.bluetoothDeviceAddress),
+					it
+				)
+			}
+			Log.d(
+				"GattCallback",
+				"Saved bluetooth device address: " + userStore.getAccessToken(context.getString(R.string.bluetoothDeviceAddress))
+			)
+		}
 	}
 
 

@@ -16,13 +16,13 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		val userStore = UserStore(applicationContext)
 
 		val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
 		val bluetoothAdapter = bluetoothManager.adapter
-		val bluetoothViewModel = BluetoothViewModel(application, bluetoothManager, bluetoothAdapter)
+		val bluetoothViewModel = BluetoothViewModel(application, bluetoothManager, bluetoothAdapter, userStore)
 
 		// auto connect to bluetooth device on start if it was connected before
-		val userStore = UserStore(applicationContext)
 		CoroutineScope(Dispatchers.IO).launch {
 			if (userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)) != "") {
 				println("Access token bluetooth" + userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
@@ -38,6 +38,8 @@ class MainActivity : ComponentActivity() {
 				println("Access token bluetooth is empty" + userStore.getAccessToken(getString(R.string.bluetoothDeviceAddress)))
 			}
 		}
+
+
 
 		setContent {
 			BLEDProjectTheme {
