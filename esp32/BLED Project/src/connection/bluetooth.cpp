@@ -3,6 +3,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include "bluetooth.h"
 
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
