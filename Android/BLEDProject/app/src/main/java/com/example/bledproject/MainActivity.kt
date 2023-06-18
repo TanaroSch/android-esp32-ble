@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.core.app.ActivityCompat
 import com.example.bledproject.bluetooth.BluetoothViewModel
 import com.example.bledproject.bluetooth.TestBluetoothScreen
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
 		setContent {
 			BLEDProjectTheme {
 
+				// check if bluetooth permissions are granted
 				if (ActivityCompat.checkSelfPermission(
 						bluetoothViewModel.context,
 						Manifest.permission.BLUETOOTH_CONNECT
@@ -68,26 +70,37 @@ class MainActivity : ComponentActivity() {
 						Manifest.permission.BLUETOOTH_SCAN
 					) != PackageManager.PERMISSION_GRANTED
 				) {
-					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-						ActivityCompat.requestPermissions(
-							this as Activity,
-							arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN),
-							1
-						)
-					} else {
-						Toast.makeText(
-							this,
-							"newer android version required",
-							Toast.LENGTH_SHORT
-						).show()
-						Text(text = "newer android version required")
-					}
+					RequestPermission()
 				} else {
+					// ADD ACTUAL CONTENT HERE
 					TestBluetoothScreen(bluetoothViewModel)
 				}
 
 
 			}
+		}
+	}
+
+	@Composable
+	private fun RequestPermission() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			// request permissions dialog
+			ActivityCompat.requestPermissions(
+				this as Activity,
+				arrayOf(
+					Manifest.permission.BLUETOOTH_CONNECT,
+					Manifest.permission.BLUETOOTH_SCAN
+				),
+				1
+			)
+		} else {
+			Toast.makeText(
+				this,
+				"newer android version required",
+				Toast.LENGTH_SHORT
+			)
+				.show()
+			Text(text = "newer android version required")
 		}
 	}
 
@@ -125,11 +138,11 @@ class MainActivity : ComponentActivity() {
 						this,
 						"Bluetooth Permission required",
 						Toast.LENGTH_SHORT
-					).show()
+					)
+						.show()
 				}
 				return
 			}
 		}
 	}
-
 }
