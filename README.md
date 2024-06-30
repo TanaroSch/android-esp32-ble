@@ -1,5 +1,5 @@
 # android-esp32-ble
-This serves as a project template for a bluetooth le connection between an ESP32 and and android app.
+This serves as a project template for a bluetooth le connection between an ESP32 and an android app.
 ## features:
 - ESP32 BLE uart server
 	- easy usage with `sendMessage(String message)` and `messageHandler(String message)` functions
